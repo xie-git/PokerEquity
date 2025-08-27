@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  poker-equity:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist database and cache
+      - poker_data:/app/data
+    environment:
+      - APP_ENV=prod
+      - DB_PATH=/app/data/app.db
+      - DAILY_SIZE=10
+      - PREFLOP_MC=200000
+      - RNG_SEED_SALT=poker_equity_salt_2024
+      - CACHE_MAX_SIZE=100000
+      - CACHE_TTL_SECONDS=2592000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/healthz')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  poker_data:
+    driver: local

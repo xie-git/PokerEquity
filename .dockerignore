@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Node modules (will be installed in container)
+frontend/node_modules
+frontend/dist
+
+# Python cache
+backend/__pycache__
+backend/**/__pycache__
+backend/.pytest_cache
+
+# Environment files
+.env
+.env.local
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+backend/tests/
+*.test.js
+*.spec.js
+
+# Development files
+frontend/.vite
+frontend/vite.config.ts.timestamp-*
