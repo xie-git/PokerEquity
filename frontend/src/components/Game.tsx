@@ -42,7 +42,7 @@ export function Game() {
   
   // Deal new question mutation
   const dealMutation = useMutation({
-    mutationFn: () => api.dealQuestion(mode),
+    mutationFn: () => api.dealQuestion(mode, opponentType),
     onSuccess: (question) => {
       setCurrentQuestion(question)
       setEquityGuess(50)
@@ -195,7 +195,9 @@ export function Game() {
   }
   
   const heroCards = parseHand(currentQuestion.hero)
-  const villainCards = currentQuestion.villain ? parseHand(currentQuestion.villain) : null
+  const isRangeMode = currentQuestion.villain.startsWith('range_')
+  const rangeOpponentType = isRangeMode ? currentQuestion.villain.replace('range_', '') : null
+  const villainCards = !isRangeMode && currentQuestion.villain ? parseHand(currentQuestion.villain) : null
   const boardCards = currentQuestion.board.map(parseCard)
   
   return (
@@ -228,12 +230,14 @@ export function Game() {
           <div className="flex justify-between items-center">
             <Hand cards={heroCards} label="Hero (You)" size="lg" />
             <div className="text-4xl text-muted-foreground">vs</div>
-            {mode === 'hidden' ? (
+            {isRangeMode ? (
               <div className="flex flex-col items-center gap-2">
-                <h3 className="text-sm font-medium text-muted-foreground">Range</h3>
+                <h3 className="text-sm font-medium text-muted-foreground capitalize">{rangeOpponentType} Range</h3>
                 <div className="flex gap-1">
-                  <div className="w-20 h-28 bg-gradient-to-b from-purple-600 to-purple-800 border border-purple-500 rounded-lg shadow-sm flex items-center justify-center text-white font-bold text-sm">
-                    Any 2
+                  <div className="w-20 h-28 bg-gradient-to-b from-purple-600 to-purple-800 border border-purple-500 rounded-lg shadow-sm flex items-center justify-center text-white font-bold text-xs text-center">
+                    {rangeOpponentType === 'tight' ? 'Top 20%' : 
+                     rangeOpponentType === 'loose' ? 'Top 40%' :
+                     rangeOpponentType === 'random' ? 'Any 2' : 'Top 25%'}
                   </div>
                 </div>
               </div>
@@ -241,11 +245,10 @@ export function Game() {
               <Hand cards={villainCards} label="Villain" size="lg" />
             ) : (
               <div className="flex flex-col items-center gap-2">
-                <h3 className="text-sm font-medium text-muted-foreground">Range</h3>
+                <h3 className="text-sm font-medium text-muted-foreground">Loading...</h3>
                 <div className="flex gap-1">
-                  <div className="w-20 h-28 bg-gradient-to-b from-purple-600 to-purple-800 border border-purple-500 rounded-lg shadow-sm flex items-center justify-center text-white font-bold text-sm">
-                    Any 2
-                  </div>
+                  <div className="w-20 h-28 bg-muted rounded-lg animate-pulse"></div>
+                  <div className="w-20 h-28 bg-muted rounded-lg animate-pulse"></div>
                 </div>
               </div>
             )}

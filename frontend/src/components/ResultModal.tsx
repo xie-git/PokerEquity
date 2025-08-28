@@ -16,15 +16,16 @@ interface ResultModalProps {
 }
 
 export function ResultModal({ isOpen, result, guess, currentQuestion, onNext }: ResultModalProps) {
-  const { getElapsedTime } = useGameStore()
+  const { getElapsedTime, mode, opponentType, setOpponentType } = useGameStore()
   const elapsedTime = getElapsedTime()
   const speedCategory = getSpeedCategory(elapsedTime)
   const speedColor = getSpeedCategoryColor(speedCategory)
   
   const heroCards = parseHand(currentQuestion.hero)
-  const villainCards = currentQuestion.villain ? parseHand(currentQuestion.villain) : null
+  const isRangeMode = currentQuestion.villain.startsWith('range_')
+  const rangeOpponentType = isRangeMode ? currentQuestion.villain.replace('range_', '') : null
+  const villainCards = !isRangeMode && currentQuestion.villain ? parseHand(currentQuestion.villain) : null
   const boardCards = currentQuestion.board.map(parseCard)
-  const isRangeMode = !currentQuestion.villain
   
   return (
     <AnimatePresence>
@@ -85,13 +86,20 @@ export function ResultModal({ isOpen, result, guess, currentQuestion, onNext }: 
                   <div className="text-xl text-muted-foreground">vs</div>
                   {isRangeMode ? (
                     <div className="flex flex-col items-center gap-2">
-                      <h3 className="text-sm font-medium text-muted-foreground">Range</h3>
-                      <div className="w-12 h-16 bg-gradient-to-b from-purple-600 to-purple-800 border border-purple-500 rounded-lg shadow-sm flex items-center justify-center text-white font-bold text-xs">
-                        Any 2
+                      <h3 className="text-sm font-medium text-muted-foreground capitalize">{rangeOpponentType} Range</h3>
+                      <div className="w-12 h-16 bg-gradient-to-b from-purple-600 to-purple-800 border border-purple-500 rounded-lg shadow-sm flex items-center justify-center text-white font-bold text-xs text-center">
+                        {rangeOpponentType === 'tight' ? 'Top 20%' : 
+                         rangeOpponentType === 'loose' ? 'Top 40%' :
+                         rangeOpponentType === 'random' ? 'Any 2' : 'Top 25%'}
                       </div>
                     </div>
+                  ) : villainCards ? (
+                    <Hand cards={villainCards} label="Villain" size="sm" />
                   ) : (
-                    <Hand cards={villainCards!} label="Villain" size="sm" />
+                    <div className="flex flex-col items-center gap-2">
+                      <h3 className="text-sm font-medium text-muted-foreground">Unknown</h3>
+                      <div className="w-12 h-16 bg-muted rounded-lg"></div>
+                    </div>
                   )}
                 </div>
                 
@@ -159,6 +167,48 @@ export function ResultModal({ isOpen, result, guess, currentQuestion, onNext }: 
                 Calculated using {result.source === 'exact' ? 'exact enumeration' : result.source}
               </div>
               
+              {/* Opponent Type Selector for Range Equity Mode */}
+              {mode === 'hidden' && isRangeMode && (
+                <div className="mb-6 p-4 bg-muted/20 rounded-lg">
+                  <h3 className="text-center text-sm font-medium text-muted-foreground mb-3">
+                    Try Different Opponent Types
+                  </h3>
+                  <div className="flex items-center justify-center gap-1 flex-wrap">
+                    <Button
+                      variant={opponentType === 'tight' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setOpponentType('tight')}
+                    >
+                      Tight
+                    </Button>
+                    <Button
+                      variant={opponentType === 'balanced' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setOpponentType('balanced')}
+                    >
+                      Balanced
+                    </Button>
+                    <Button
+                      variant={opponentType === 'loose' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setOpponentType('loose')}
+                    >
+                      Loose
+                    </Button>
+                    <Button
+                      variant={opponentType === 'random' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setOpponentType('random')}
+                    >
+                      Random
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Changes will apply to your next question
+                  </p>
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex gap-2">
                 <Button
