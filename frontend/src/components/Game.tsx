@@ -7,6 +7,7 @@ import { Hand, Board } from './Card'
 import { PercentInput } from './PercentInput'
 import { EquityDial } from './EquityDial'
 import { ResultModal } from './ResultModal'
+import { Timer } from './Timer'
 import { Button } from './ui/Button'
 import { Loader2 } from 'lucide-react'
 import type { GradeRequest } from '../lib/types'
@@ -20,6 +21,8 @@ export function Game() {
     deviceId,
     dailyQuestions,
     dailyIndex,
+    startTime,
+    opponentType,
     setGameState,
     setCurrentQuestion,
     setLastResult,
@@ -39,7 +42,7 @@ export function Game() {
   
   // Deal new question mutation
   const dealMutation = useMutation({
-    mutationFn: api.dealQuestion,
+    mutationFn: () => api.dealQuestion(mode),
     onSuccess: (question) => {
       setCurrentQuestion(question)
       setEquityGuess(50)
@@ -83,7 +86,7 @@ export function Game() {
   
   // Load initial question
   useEffect(() => {
-    if (mode === 'drill') {
+    if (mode === 'drill' || mode === 'hidden') {
       dealMutation.mutate()
     } else {
       // Daily mode - check if we have questions loaded
@@ -106,7 +109,7 @@ export function Game() {
     setLastResult(null)
     setSubmittedGuess(null) // Reset submitted guess
     
-    if (mode === 'drill') {
+    if (mode === 'drill' || mode === 'hidden') {
       dealMutation.mutate()
     } else {
       // Daily mode
@@ -192,13 +195,13 @@ export function Game() {
   }
   
   const heroCards = parseHand(currentQuestion.hero)
-  const villainCards = parseHand(currentQuestion.villain)
+  const villainCards = currentQuestion.villain ? parseHand(currentQuestion.villain) : null
   const boardCards = currentQuestion.board.map(parseCard)
   
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Mode indicator */}
-      <div className="text-center mb-6">
+      {/* Mode indicator and Timer */}
+      <div className="flex items-center justify-center mb-6 gap-4">
         <div className="inline-flex items-center gap-2 bg-muted px-3 py-1 rounded-full text-sm">
           <span className="capitalize">{mode} Mode</span>
           {mode === 'daily' && (
@@ -207,6 +210,15 @@ export function Game() {
             </span>
           )}
         </div>
+        
+        {gameState === 'input' && (
+          <Timer 
+            startTime={startTime}
+            isRunning={true}
+            size="lg"
+            className="bg-primary/10 px-3 py-1 rounded-full"
+          />
+        )}
       </div>
       
       {/* Game board */}
@@ -216,7 +228,27 @@ export function Game() {
           <div className="flex justify-between items-center">
             <Hand cards={heroCards} label="Hero (You)" size="lg" />
             <div className="text-4xl text-muted-foreground">vs</div>
-            <Hand cards={villainCards} label="Villain" size="lg" />
+            {mode === 'hidden' ? (
+              <div className="flex flex-col items-center gap-2">
+                <h3 className="text-sm font-medium text-muted-foreground">Range</h3>
+                <div className="flex gap-1">
+                  <div className="w-20 h-28 bg-gradient-to-b from-purple-600 to-purple-800 border border-purple-500 rounded-lg shadow-sm flex items-center justify-center text-white font-bold text-sm">
+                    Any 2
+                  </div>
+                </div>
+              </div>
+            ) : villainCards ? (
+              <Hand cards={villainCards} label="Villain" size="lg" />
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <h3 className="text-sm font-medium text-muted-foreground">Range</h3>
+                <div className="flex gap-1">
+                  <div className="w-20 h-28 bg-gradient-to-b from-purple-600 to-purple-800 border border-purple-500 rounded-lg shadow-sm flex items-center justify-center text-white font-bold text-sm">
+                    Any 2
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Board */}
@@ -275,11 +307,12 @@ export function Game() {
       </div>
       
       {/* Result modal */}
-      {lastResult && submittedGuess !== null && (
+      {lastResult && submittedGuess !== null && currentQuestion && (
         <ResultModal
           isOpen={gameState === 'result'}
           result={lastResult}
           guess={submittedGuess}
+          currentQuestion={currentQuestion}
           onNext={handleNext}
         />
       )}

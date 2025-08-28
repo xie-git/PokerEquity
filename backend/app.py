@@ -9,8 +9,8 @@ from typing import List
 
 from .models import init_db, get_db
 from .game import (
-    QuestionData, GradeRequest, GradeResponse, StatsResponse,
-    create_question, grade_answer, get_daily_questions, get_player_stats
+    QuestionData, GradeRequest, GradeResponse, StatsResponse, EnhancedStatsResponse,
+    create_question, grade_answer, get_daily_questions, get_player_stats, get_enhanced_player_stats
 )
 from .services import timed_endpoint, metrics
 from .config import config
@@ -52,10 +52,10 @@ async def get_metrics():
 # Deal a new question
 @app.post("/api/deal", response_model=QuestionData)
 @timed_endpoint("deal")
-async def deal_question(db: Session = Depends(get_db)):
+async def deal_question(mode: str = "drill", opponent_type: str = "balanced", db: Session = Depends(get_db)):
     """Generate a new random poker question."""
     try:
-        question = await create_question(db)
+        question = await create_question(db, mode, opponent_type)
         return question
     except Exception as e:
         logger.error(f"Error dealing question: {e}")
@@ -117,6 +117,23 @@ async def get_stats(device_id: str, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to get statistics")
+
+# Get enhanced player statistics with time analytics
+@app.get("/api/me/stats/enhanced", response_model=EnhancedStatsResponse)
+@timed_endpoint("enhanced_stats")
+async def get_enhanced_stats(device_id: str, db: Session = Depends(get_db)):
+    """Get enhanced player statistics with time analytics."""
+    try:
+        if not device_id or len(device_id) < 3:
+            raise ValueError("Valid device_id is required")
+        
+        stats = await get_enhanced_player_stats(device_id, db)
+        return stats
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting enhanced stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get enhanced statistics")
 
 # Define frontend serving AFTER all API routes
 def setup_frontend_routes():

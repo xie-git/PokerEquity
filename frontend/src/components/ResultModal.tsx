@@ -1,19 +1,30 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from './ui/Button'
 import { EquityDial } from './EquityDial'
-import { GradeResponse } from '../lib/types'
-import { getScoreColor, getScoreLabel, getStreakBonus } from '../lib/utils'
-import { Trophy, Target, TrendingUp, Zap } from 'lucide-react'
+import { Hand, Board } from './Card'
+import { GradeResponse, Question } from '../lib/types'
+import { formatTime, getSpeedCategory, getSpeedCategoryColor, parseCard, parseHand } from '../lib/utils'
+import { Target, TrendingUp, Zap, Clock } from 'lucide-react'
+import { useGameStore } from '../store/gameStore'
 
 interface ResultModalProps {
   isOpen: boolean
   result: GradeResponse
   guess: number
+  currentQuestion: Question
   onNext: () => void
 }
 
-export function ResultModal({ isOpen, result, guess, onNext }: ResultModalProps) {
-  const streakBonus = getStreakBonus(result.streak)
+export function ResultModal({ isOpen, result, guess, currentQuestion, onNext }: ResultModalProps) {
+  const { getElapsedTime } = useGameStore()
+  const elapsedTime = getElapsedTime()
+  const speedCategory = getSpeedCategory(elapsedTime)
+  const speedColor = getSpeedCategoryColor(speedCategory)
+  
+  const heroCards = parseHand(currentQuestion.hero)
+  const villainCards = currentQuestion.villain ? parseHand(currentQuestion.villain) : null
+  const boardCards = currentQuestion.board.map(parseCard)
+  const isRangeMode = !currentQuestion.villain
   
   return (
     <AnimatePresence>
@@ -35,20 +46,25 @@ export function ResultModal({ isOpen, result, guess, onNext }: ResultModalProps)
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-background border rounded-lg shadow-lg p-6 w-full max-w-md">
+            <div className="bg-background border rounded-lg shadow-lg p-6 w-full max-w-lg">
               {/* Header */}
               <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Trophy className={`h-6 w-6 ${getScoreColor(result.score)}`} />
-                  <h2 className="text-2xl font-bold">
-                    {getScoreLabel(result.score)}
-                  </h2>
-                </div>
+                <h2 className="text-2xl font-bold text-foreground mb-2">
+                  Result: {result.delta.toFixed(1)}% Error
+                </h2>
                 
-                <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground flex-wrap">
                   <div className="flex items-center gap-1">
                     <Target className="h-4 w-4" />
                     <span>±{result.delta}%</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatTime(elapsedTime)}</span>
+                    <span className={`ml-1 font-medium ${speedColor}`}>
+                      {speedCategory}
+                    </span>
                   </div>
                   
                   {result.streak > 0 && (
@@ -57,6 +73,30 @@ export function ResultModal({ isOpen, result, guess, onNext }: ResultModalProps)
                       <span>{result.streak} streak</span>
                     </div>
                   )}
+                </div>
+              </div>
+              
+              {/* Hand Visualization */}
+              <div className="mb-6 bg-muted/30 rounded-lg p-4">
+                <h3 className="text-center text-sm font-medium text-muted-foreground mb-4">Hand Recap</h3>
+                
+                <div className="flex justify-between items-center mb-4">
+                  <Hand cards={heroCards} label="Hero" size="sm" />
+                  <div className="text-xl text-muted-foreground">vs</div>
+                  {isRangeMode ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <h3 className="text-sm font-medium text-muted-foreground">Range</h3>
+                      <div className="w-12 h-16 bg-gradient-to-b from-purple-600 to-purple-800 border border-purple-500 rounded-lg shadow-sm flex items-center justify-center text-white font-bold text-xs">
+                        Any 2
+                      </div>
+                    </div>
+                  ) : (
+                    <Hand cards={villainCards!} label="Villain" size="sm" />
+                  )}
+                </div>
+                
+                <div className="flex justify-center">
+                  <Board cards={boardCards} street={currentQuestion.street} size="sm" />
                 </div>
               </div>
               
@@ -70,27 +110,29 @@ export function ResultModal({ isOpen, result, guess, onNext }: ResultModalProps)
                 />
               </div>
               
-              {/* Score breakdown */}
+              {/* Performance summary */}
               <div className="bg-muted/50 rounded-lg p-4 mb-6">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-3 gap-4 text-sm">
                   <div className="text-center">
-                    <div className="font-semibold text-lg">
-                      {Math.round(result.score / (1 + streakBonus/100))}
+                    <div className="font-semibold text-lg text-primary">
+                      {guess.toFixed(1)}%
                     </div>
-                    <div className="text-muted-foreground">Base Score</div>
+                    <div className="text-muted-foreground">Your Guess</div>
                   </div>
                   
                   <div className="text-center">
                     <div className="font-semibold text-lg text-primary">
-                      {result.score}
+                      {result.truth.toFixed(1)}%
                     </div>
-                    <div className="text-muted-foreground">
-                      Final Score
-                      {streakBonus > 0 && (
-                        <span className="text-yellow-600 ml-1">
-                          (+{streakBonus}%)
-                        </span>
-                      )}
+                    <div className="text-muted-foreground">True Equity</div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="font-semibold text-lg">
+                      {formatTime(elapsedTime)}
+                    </div>
+                    <div className={`text-xs font-medium ${speedColor}`}>
+                      {speedCategory}
                     </div>
                   </div>
                 </div>

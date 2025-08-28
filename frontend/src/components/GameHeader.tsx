@@ -39,6 +39,13 @@ export function GameHeader({ onShowStats }: GameHeaderProps) {
           >
             Daily 10
           </Button>
+          <Button
+            variant={mode === 'hidden' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setMode('hidden')}
+          >
+            Range Equity
+          </Button>
         </div>
         
         {/* Actions */}

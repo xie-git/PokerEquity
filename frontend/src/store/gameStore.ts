@@ -11,6 +11,9 @@ interface GameStore {
   lastResult: GradeResponse | null
   startTime: number
   
+  // Range mode settings
+  opponentType: 'tight' | 'balanced' | 'loose' | 'random'
+  
   // Settings
   settings: GameSettings
   deviceId: string
@@ -24,6 +27,7 @@ interface GameStore {
   setGameState: (state: GameState) => void
   setCurrentQuestion: (question: Question | null) => void
   setLastResult: (result: GradeResponse | null) => void
+  setOpponentType: (type: 'tight' | 'balanced' | 'loose' | 'random') => void
   startQuestion: () => void
   getElapsedTime: () => number
   updateSettings: (settings: Partial<GameSettings>) => void
@@ -42,6 +46,9 @@ export const useGameStore = create<GameStore>()(
       lastResult: null,
       startTime: 0,
       
+      // Range mode settings
+      opponentType: 'balanced',
+      
       settings: {
         darkMode: false,
         soundEnabled: true,
@@ -56,6 +63,7 @@ export const useGameStore = create<GameStore>()(
       setGameState: (gameState) => set({ gameState }),
       setCurrentQuestion: (currentQuestion) => set({ currentQuestion }),
       setLastResult: (lastResult) => set({ lastResult }),
+      setOpponentType: (opponentType) => set({ opponentType }),
       
       startQuestion: () => set({ 
         startTime: Date.now(), 
